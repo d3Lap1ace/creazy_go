@@ -2,15 +2,14 @@ package main
 
 import "net"
 
-type User struct{
+type User struct {
 	Name string
 	Addr string
 	C    chan string
 	conn net.Conn
 }
 
-
-func NewUser (conn net.Conn) *User {
+func NewUser(conn net.Conn) *User {
 	userAddr := conn.RemoteAddr().String()
 
 	user := &User{
@@ -19,7 +18,6 @@ func NewUser (conn net.Conn) *User {
 		C:    make(chan string),
 		conn: conn,
 	}
-
 	go user.ListenMessage()
 
 	return user
