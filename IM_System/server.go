@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -47,6 +48,8 @@ func (this *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, this)
 
 	user.online()
+
+	isLive := make(chan bool)
 	// Receive client msg
 	go func() {
 		buf := make([]byte, 4096)
@@ -66,10 +69,24 @@ func (this *Server) Handler(conn net.Conn) {
 			msg := string(buf[:n-1])
 
 			user.DoMessage(msg)
+
+			isLive <- true
 		}
 	}()
 
-	select {}
+	for {
+		select {
+		case <-isLive:
+		case <-time.After(time.Hour * 1):
+			user.SendMsg("your has too long on server,your has offline")
+
+			close(user.C)
+
+			conn.Close()
+
+			return
+		}
+	}
 }
 
 func (this *Server) Start() {
