@@ -6,22 +6,24 @@ import (
 )
 
 type User struct {
-	Name   string
-	Addr   string
-	C      chan string
-	conn   net.Conn
-	server *Server
+	Name      string
+	Addr      string
+	C         chan string
+	conn      net.Conn
+	server    *Server
+	isPrivate bool
 }
 
 func NewUser(conn net.Conn, server *Server) *User {
 	userAddr := conn.RemoteAddr().String()
 
 	user := &User{
-		Name:   userAddr,
-		Addr:   userAddr,
-		C:      make(chan string),
-		conn:   conn,
-		server: server,
+		Name:      userAddr,
+		Addr:      userAddr,
+		C:         make(chan string),
+		conn:      conn,
+		server:    server,
+		isPrivate: false,
 	}
 	go user.ListenMessage()
 
@@ -64,6 +66,14 @@ func (this *User) DoMessage(msg string) {
 			this.Name = newName
 			this.SendMsg("your name is " + this.Name + "\n")
 		}
+	} else if len(msg) > 4 && msg[:3] == "to|" {
+		remoteName := strings.Split(msg, "|")[1]
+		_, ok := this.server.OnlineMap[remoteName]
+		if !ok {
+			this.SendMsg("user not online")
+			return
+		}
+
 	} else {
 		this.server.BroadCast(this, msg)
 	}
